@@ -14,7 +14,7 @@ type WGetTask struct {
 
 const (
 	dataDir         = "data"
-	defaultCapacity = 100
+	defaultCapacity = 10000
 )
 
 //GetChipSeqExperiments ...
