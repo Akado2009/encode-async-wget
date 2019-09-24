@@ -12,7 +12,6 @@ import (
 
 func getExperiments(URL string) *Experiments {
 	experiments := &Experiments{}
-	fmt.Println(URL)
 	response, err := http.Get(URL)
 	if err != nil {
 		log.Fatal(err)
@@ -24,7 +23,6 @@ func getExperiments(URL string) *Experiments {
 
 func getFiles(URL string) *Files {
 	files := &Files{}
-	fmt.Println(URL)
 	response, err := http.Get(URL)
 	if err != nil {
 		log.Fatal(err)
@@ -36,7 +34,6 @@ func getFiles(URL string) *Files {
 
 func getFileResponse(URL string) *FileResponse {
 	fResponse := &FileResponse{}
-	fmt.Println(URL)
 	response, err := http.Get(URL)
 	if err != nil {
 		log.Fatal(err)
@@ -85,16 +82,20 @@ func main() {
 				for _, subFile := range file.Data {
 					ids = append(ids, subFile.ID)
 					fResp := getFileResponse(fmt.Sprintf(AppConfig.FileURL, subFile.ID))
+					if fResp.OutputType == "signal" || fResp.OutputType == "raw signal" {
 
-					output := fmt.Sprintf(
-						"%s\t%s\t%s\t%s\t%s\t%s\n",
-						fResp.Accession,
-						fResp.Dataset,
-						"empty",
-						fResp.Lab.Title,
-						fmt.Sprintf(AppConfig.EncodeRoot, fResp.Href),
-						fResp.OutputType)
-					_, _ = datawriter.WriteString(output)
+						// check for controls
+						// create a better table with controls [control1, control2] to just sum them?
+						output := fmt.Sprintf(
+							"%s\t%s\t%s\t%s\t%s\t%s\n",
+							fResp.Accession,
+							fResp.Dataset,
+							"empty",
+							fResp.Lab.Title,
+							fmt.Sprintf(AppConfig.EncodeRoot, fResp.Href),
+							fResp.OutputType)
+						_, _ = datawriter.WriteString(output)
+					}
 				}
 			}
 		}
