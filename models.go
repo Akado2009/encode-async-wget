@@ -1,5 +1,30 @@
 package main
 
+import (
+	"github.com/BurntSushi/toml"
+)
+
+var (
+	configPath = "config.toml"
+	//AppConfig ...
+	AppConfig Config
+)
+
+//Config ...
+type Config struct {
+	File          string `toml:"File"`
+	EncodeRoot    string `toml:"EncodeRoot"`
+	FileURL       string `toml:"FileURL"`
+	ExperimentURL string `toml:"ExperimentURL"`
+	MainURL       string `toml:"MainURL"`
+}
+
+//LoadConfig ..
+func LoadConfig(c *Config) error {
+	_, err := toml.DecodeFile(configPath, c)
+	return err
+}
+
 //Experiments ...
 type Experiments struct {
 	Graph []Experiment `json:"@graph"`

@@ -10,14 +10,6 @@ import (
 	"os"
 )
 
-const (
-	mainURL       = "https://www.encodeproject.org/search/?type=Experiment&status=released&assay_title=Histone+ChIP-seq&replicates.library.biosample.donor.organism.scientific_name=Homo+sapiens&limit=all&format=json"
-	experimentURL = "https://www.encodeproject.org/search/?searchTerm=%s&format=json"
-	fileURL       = "https://www.encodeproject.org%s?format=json"
-	encodeRoot    = "https://www.encodeproject.org%s"
-	filename      = "encode.files.txt"
-)
-
 func getExperiments(URL string) *Experiments {
 	experiments := &Experiments{}
 	fmt.Println(URL)
@@ -67,14 +59,18 @@ func exists(path string) (bool, error) {
 
 func main() {
 
-	yes, err := exists(filename)
+	if err := LoadConfig(&AppConfig); err != nil {
+		log.Fatalf("Config loading failed: %v", err)
+	}
+
+	yes, err := exists(AppConfig.File)
 	if err != nil {
 		log.Fatal(err)
 	}
 	if !yes {
 		ids := make([]string, 0)
 
-		file, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		file, err := os.OpenFile(AppConfig.File, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 
 		if err != nil {
 			log.Fatalf("failed creating file: %s", err)
@@ -82,13 +78,13 @@ func main() {
 		datawriter := bufio.NewWriter(file)
 		_, _ = datawriter.WriteString("Accession\tDataset\tTissue\tLab\tLink\tDataType\n")
 
-		result := getExperiments(mainURL)
+		result := getExperiments(AppConfig.MainURL)
 		for _, experiment := range result.Graph {
-			files := getFiles(fmt.Sprintf(experimentURL, experiment.Accession))
+			files := getFiles(fmt.Sprintf(AppConfig.ExperimentURL, experiment.Accession))
 			for _, file := range files.Graph {
 				for _, subFile := range file.Data {
 					ids = append(ids, subFile.ID)
-					fResp := getFileResponse(fmt.Sprintf(fileURL, subFile.ID))
+					fResp := getFileResponse(fmt.Sprintf(AppConfig.FileURL, subFile.ID))
 
 					output := fmt.Sprintf(
 						"%s\t%s\t%s\t%s\t%s\t%s\n",
@@ -96,7 +92,7 @@ func main() {
 						fResp.Dataset,
 						"empty",
 						fResp.Lab.Title,
-						fmt.Sprintf(encodeRoot, fResp.Href),
+						fmt.Sprintf(AppConfig.EncodeRoot, fResp.Href),
 						fResp.OutputType)
 					_, _ = datawriter.WriteString(output)
 				}
