@@ -43,6 +43,22 @@ func getFileResponse(URL string) *FileResponse {
 	return fResponse
 }
 
+func checkForControl(URL string) []string {
+	fmt.Println(URL)
+	cResponse := &ControlResponse{}
+	response, err := http.Get(URL)
+	if err != nil {
+		log.Fatal(err)
+	}
+	data, _ := ioutil.ReadAll(response.Body)
+	err = json.Unmarshal(data, cResponse)
+	fmt.Printf("%+v\n", cResponse)
+	if len(cResponse.Controls) > 0 {
+		return cResponse.Controls[0].Files
+	}
+	return make([]string, 0)
+}
+
 func exists(path string) (bool, error) {
 	_, err := os.Stat(path)
 	if err == nil {
@@ -67,7 +83,7 @@ func main() {
 	if !yes {
 		ids := make([]string, 0)
 
-		file, err := os.OpenFile(AppConfig.File, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		file, err := os.OpenFile(AppConfig.File, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0777)
 
 		if err != nil {
 			log.Fatalf("failed creating file: %s", err)
@@ -76,6 +92,8 @@ func main() {
 		_, _ = datawriter.WriteString("Accession\tDataset\tTissue\tLab\tLink\tDataType\n")
 
 		result := getExperiments(AppConfig.MainURL)
+
+		previousDataset := ""
 		for _, experiment := range result.Graph {
 			files := getFiles(fmt.Sprintf(AppConfig.ExperimentURL, experiment.Accession))
 			for _, file := range files.Graph {
@@ -86,6 +104,14 @@ func main() {
 
 						// check for controls
 						// create a better table with controls [control1, control2] to just sum them?
+						fmt.Println("DATASETS", previousDataset, fResp.Dataset)
+						if previousDataset != fResp.Dataset {
+							previousDataset = fResp.Dataset
+
+							controls := checkForControl(fmt.Sprintf(AppConfig.ExperimentControlURL, fResp.Dataset))
+							fmt.Println("CONTROLS", controls)
+							//AddControls! (can add bam, since we have bam2wig)
+						}
 						output := fmt.Sprintf(
 							"%s\t%s\t%s\t%s\t%s\t%s\n",
 							fResp.Accession,

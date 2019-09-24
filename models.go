@@ -12,11 +12,12 @@ var (
 
 //Config ...
 type Config struct {
-	File          string `toml:"File"`
-	EncodeRoot    string `toml:"EncodeRoot"`
-	FileURL       string `toml:"FileURL"`
-	ExperimentURL string `toml:"ExperimentURL"`
-	MainURL       string `toml:"MainURL"`
+	File                 string `toml:"File"`
+	EncodeRoot           string `toml:"EncodeRoot"`
+	FileURL              string `toml:"FileURL"`
+	ExperimentURL        string `toml:"ExperimentURL"`
+	ExperimentControlURL string `toml:"ExperimentControlURL"`
+	MainURL              string `toml:"MainURL"`
 }
 
 //LoadConfig ..
@@ -64,4 +65,14 @@ type FileResponse struct {
 //LabStruct ...
 type LabStruct struct {
 	Title string `json:"title"`
+}
+
+//ControlResponse ...
+type ControlResponse struct {
+	Controls []PossibleControls `json:"possible_controls"`
+}
+
+//PossibleControls ...
+type PossibleControls struct {
+	Files []string `json:"files"`
 }
