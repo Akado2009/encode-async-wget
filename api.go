@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 )
 
 func getExperiments(URL string) *Experiments {
@@ -44,7 +45,6 @@ func getFileResponse(URL string) *FileResponse {
 }
 
 func checkForControl(URL string) []string {
-	fmt.Println(URL)
 	cResponse := &ControlResponse{}
 	response, err := http.Get(URL)
 	if err != nil {
@@ -52,7 +52,6 @@ func checkForControl(URL string) []string {
 	}
 	data, _ := ioutil.ReadAll(response.Body)
 	err = json.Unmarshal(data, cResponse)
-	fmt.Printf("%+v\n", cResponse)
 	if len(cResponse.Controls) > 0 {
 		return cResponse.Controls[0].Files
 	}
@@ -81,7 +80,6 @@ func main() {
 		log.Fatal(err)
 	}
 	if !yes {
-		ids := make([]string, 0)
 
 		file, err := os.OpenFile(AppConfig.File, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0777)
 
@@ -89,7 +87,7 @@ func main() {
 			log.Fatalf("failed creating file: %s", err)
 		}
 		datawriter := bufio.NewWriter(file)
-		_, _ = datawriter.WriteString("Accession\tDataset\tTissue\tLab\tLink\tDataType\n")
+		_, _ = datawriter.WriteString("Accession\tDataset\tTissue\tLab\tLink\tDataType\tControls\n")
 
 		result := getExperiments(AppConfig.MainURL)
 
@@ -98,36 +96,31 @@ func main() {
 			files := getFiles(fmt.Sprintf(AppConfig.ExperimentURL, experiment.Accession))
 			for _, file := range files.Graph {
 				for _, subFile := range file.Data {
-					ids = append(ids, subFile.ID)
 					fResp := getFileResponse(fmt.Sprintf(AppConfig.FileURL, subFile.ID))
 					if fResp.OutputType == "signal" || fResp.OutputType == "raw signal" {
 
 						// check for controls
 						// create a better table with controls [control1, control2] to just sum them?
-						fmt.Println("DATASETS", previousDataset, fResp.Dataset)
 						if previousDataset != fResp.Dataset {
 							previousDataset = fResp.Dataset
+							fmt.Printf("%+v\n", fResp.Lab)
 
 							controls := checkForControl(fmt.Sprintf(AppConfig.ExperimentControlURL, fResp.Dataset))
-							fmt.Println("CONTROLS", controls)
 							//AddControls! (can add bam, since we have bam2wig)
+							output := fmt.Sprintf(
+								"%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+								fResp.Accession,
+								fResp.Dataset,
+								"empty",
+								fResp.Lab.Title,
+								fmt.Sprintf(AppConfig.EncodeRoot, fResp.Href),
+								fResp.OutputType,
+								strings.Join(controls, ", "))
+							_, _ = datawriter.WriteString(output)
 						}
-						output := fmt.Sprintf(
-							"%s\t%s\t%s\t%s\t%s\t%s\n",
-							fResp.Accession,
-							fResp.Dataset,
-							"empty",
-							fResp.Lab.Title,
-							fmt.Sprintf(AppConfig.EncodeRoot, fResp.Href),
-							fResp.OutputType)
-						_, _ = datawriter.WriteString(output)
 					}
 				}
 			}
-		}
-
-		for _, data := range ids {
-			_, _ = datawriter.WriteString(data + "\n")
 		}
 
 		datawriter.Flush()

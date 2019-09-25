@@ -60,11 +60,18 @@ type FileResponse struct {
 	Lab        LabStruct `json:"lab"`
 	OutputType string    `json:"output_type"`
 	Href       string    `json:"href"`
+	Ontology   string    `json:"biosample_ontology"`
 }
 
 //LabStruct ...
 type LabStruct struct {
 	Title string `json:"title"`
+}
+
+//Ontology ...
+type Ontology struct {
+	Organ []string `json:"organ_slims"`
+	Cell  []string `json:"cell_slims"`
 }
 
 //ControlResponse ...
