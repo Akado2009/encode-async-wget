@@ -87,7 +87,7 @@ func main() {
 			log.Fatalf("failed creating file: %s", err)
 		}
 		datawriter := bufio.NewWriter(file)
-		_, _ = datawriter.WriteString("Accession\tDataset\tTissue\tLab\tLink\tDataType\tControls\n")
+		_, _ = datawriter.WriteString("Accession\tDataset\tTissue\tCellLine\tPrimaryCell\tLab\tLink\tDataType\tControls\n")
 
 		result := getExperiments(AppConfig.MainURL)
 
@@ -95,6 +95,17 @@ func main() {
 		for _, experiment := range result.Graph {
 			files := getFiles(fmt.Sprintf(AppConfig.ExperimentURL, experiment.Accession))
 			for _, file := range files.Graph {
+				tissue := "."
+				cellLine := "."
+				primaryCell := "."
+				switch file.Ontology.Classification {
+				case "cell line":
+					cellLine = file.Ontology.TermName
+				case "tissue":
+					tissue = file.Ontology.TermName
+				case "primary cell":
+					primaryCell = file.Ontology.TermName
+				}
 				for _, subFile := range file.Data {
 					fResp := getFileResponse(fmt.Sprintf(AppConfig.FileURL, subFile.ID))
 					if fResp.OutputType == "signal" || fResp.OutputType == "raw signal" {
@@ -103,7 +114,6 @@ func main() {
 						// create a better table with controls [control1, control2] to just sum them?
 						if previousDataset != fResp.Dataset {
 							previousDataset = fResp.Dataset
-							fmt.Printf("%+v\n", fResp.Lab)
 
 							controls := checkForControl(fmt.Sprintf(AppConfig.ExperimentControlURL, fResp.Dataset))
 							//AddControls! (can add bam, since we have bam2wig)
@@ -111,7 +121,9 @@ func main() {
 								"%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
 								fResp.Accession,
 								fResp.Dataset,
-								"empty",
+								tissue,
+								cellLine,
+								primaryCell,
 								fResp.Lab.Title,
 								fmt.Sprintf(AppConfig.EncodeRoot, fResp.Href),
 								fResp.OutputType,

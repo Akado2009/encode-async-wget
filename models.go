@@ -43,7 +43,8 @@ type Files struct {
 
 //SubGraph ...
 type SubGraph struct {
-	Data []File `json:"files"`
+	Ontology OntologyStruct `json:"biosample_ontology"`
+	Data     []File         `json:"files"`
 }
 
 //File ...
@@ -60,7 +61,6 @@ type FileResponse struct {
 	Lab        LabStruct `json:"lab"`
 	OutputType string    `json:"output_type"`
 	Href       string    `json:"href"`
-	Ontology   string    `json:"biosample_ontology"`
 }
 
 //LabStruct ...
@@ -69,9 +69,9 @@ type LabStruct struct {
 }
 
 //Ontology ...
-type Ontology struct {
-	Organ []string `json:"organ_slims"`
-	Cell  []string `json:"cell_slims"`
+type OntologyStruct struct {
+	Classification string `json:"classification"` //can be either tissue/cell line (everything else = garbage (est est primary cell))
+	TermName       string `json:"term_name"`
 }
 
 //ControlResponse ...
