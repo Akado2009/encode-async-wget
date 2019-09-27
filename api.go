@@ -91,7 +91,6 @@ func main() {
 
 		result := getExperiments(AppConfig.MainURL)
 
-		previousDataset := ""
 		for _, experiment := range result.Graph {
 			files := getFiles(fmt.Sprintf(AppConfig.ExperimentURL, experiment.Accession))
 			for _, file := range files.Graph {
@@ -112,24 +111,21 @@ func main() {
 
 						// check for controls
 						// create a better table with controls [control1, control2] to just sum them?
-						if previousDataset != fResp.Dataset {
-							previousDataset = fResp.Dataset
 
-							controls := checkForControl(fmt.Sprintf(AppConfig.ExperimentControlURL, fResp.Dataset))
-							//AddControls! (can add bam, since we have bam2wig)
-							output := fmt.Sprintf(
-								"%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-								fResp.Accession,
-								fResp.Dataset,
-								tissue,
-								cellLine,
-								primaryCell,
-								fResp.Lab.Title,
-								fmt.Sprintf(AppConfig.EncodeRoot, fResp.Href),
-								fResp.OutputType,
-								strings.Join(controls, ", "))
-							_, _ = datawriter.WriteString(output)
-						}
+						controls := checkForControl(fmt.Sprintf(AppConfig.ExperimentControlURL, fResp.Dataset))
+						//AddControls! (can add bam, since we have bam2wig)
+						output := fmt.Sprintf(
+							"%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+							fResp.Accession,
+							fResp.Dataset,
+							tissue,
+							cellLine,
+							primaryCell,
+							fResp.Lab.Title,
+							fmt.Sprintf(AppConfig.EncodeRoot, fResp.Href),
+							fResp.OutputType,
+							strings.Join(controls, ", "))
+						_, _ = datawriter.WriteString(output)
 					}
 				}
 			}
