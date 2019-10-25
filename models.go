@@ -83,3 +83,9 @@ type ControlResponse struct {
 type PossibleControls struct {
 	Files []string `json:"files"`
 }
+
+//FileDescription ...
+type FileDescription struct {
+	FileType string `json:"file_type"`
+	Href     string `json:"href"`
+}

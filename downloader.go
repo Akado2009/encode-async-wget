@@ -6,14 +6,17 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 )
 
 const (
-	downloadDirectory = "/mnt/scratch/shared/SG_KIRILL/"
+	downloadDirectory = "/mnt/scratch/shared/SG_KIRILL/samples/"
 	inputTable        = "encode.files.txt"
 	taskCapacity      = 10
 	separator         = "\t"
 )
+
+var wg sync.WaitGroup
 
 func main() {
 
@@ -26,16 +29,16 @@ func main() {
 	}
 	defer file.Close()
 
-	go func() {
-		for {
-			select {
-			case <-freeResources:
-				filename := <-filenamesChannel
-				// download
-				go func(fname string) {
+	for i := 0; i < taskCapacity; i++ {
+		wg.Add(1)
+		go func() {
+			for {
+				select {
+				case <-freeResources:
+					filename := <-filenamesChannel
 					cmd := exec.Command(
 						"wget",
-						fname,
+						filename,
 						"-P",
 						downloadDirectory,
 					)
@@ -45,11 +48,10 @@ func main() {
 						log.Print(err)
 					}
 					freeResources <- struct{}{}
-
-				}(filename)
+				}
 			}
-		}
-	}()
+		}()
+	}
 
 	for i := 0; i < taskCapacity; i++ {
 		freeResources <- struct{}{} // fill it initially
@@ -66,6 +68,8 @@ func main() {
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
 	}
+
+	wg.Wait()
 	// read table
 	// store tasks
 	// download everything
