@@ -2,6 +2,8 @@ GO=go
 FILES=api.go models.go
 D_FILES=downloader.go models.go
 C_FILES=control.go models.go
+BW_FILES=bigWigToWig.go
+BAM_FILES=bamToWig.go
 FILES_ONE=one.go models.go
 RUN=run
 EXPORTS=GOARCH=amd64 GOOS=linux
@@ -9,6 +11,8 @@ BUILD=build
 OUT=api
 D_OUT=downloader
 C_OUT=control
+BW_OUT=bigWigToWigGo
+BAM_OUT=bamToWigGo
 PRE_CMD=rm -rf encode.files.txt
 
 downloader:
@@ -19,6 +23,14 @@ control:
 	$(PRE_CMD) | $(GO) $(RUN) $(C_FILES)
 control_release:
 	$(PRE_CMD) | $(EXPORTS) $(GO) $(BUILD) -o $(C_OUT) $(C_FILES)
+bigwig:
+	$(PRE_CMD) | $(GO) $(RUN) $(BW_FILES)
+bigwig_release:
+	$(PRE_CMD) | $(EXPORTS) $(GO) $(BUILD) -o $(BW_OUT) $(BW_FILES)
+bam:
+	$(PRE_CMD) | $(GO) $(RUN) $(BAM_FILES)
+bam_release:
+	$(PRE_CMD) | $(EXPORTS) $(GO) $(BUILD) -o $(BAM_OUT) $(BAM_FILES)
 run:
 	$(PRE_CMD) | $(GO) $(RUN) $(FILES)
 one:
