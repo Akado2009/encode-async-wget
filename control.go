@@ -42,6 +42,7 @@ func getLink(urlPart string) string {
 	}
 	return ""
 }
+
 func main() {
 	mu := &sync.Mutex{}
 	seen := make(map[string]bool, 0)
@@ -84,7 +85,6 @@ func main() {
 						}
 					}
 					freeResources <- struct{}{}
-
 				}
 			}
 		}()

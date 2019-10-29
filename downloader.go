@@ -19,6 +19,8 @@ const (
 var wg sync.WaitGroup
 
 func main() {
+	mu := &sync.Mutex{}
+	seen := make(map[string]bool, 0)
 
 	filenamesChannel := make(chan string, taskCapacity)
 	freeResources := make(chan struct{}, taskCapacity)
@@ -36,16 +38,23 @@ func main() {
 				select {
 				case <-freeResources:
 					filename := <-filenamesChannel
-					cmd := exec.Command(
-						"wget",
-						filename,
-						"-P",
-						downloadDirectory,
-					)
-					log.Println(cmd)
-					err := cmd.Run()
-					if err != nil {
-						log.Print(err)
+					mu.Lock()
+					if _, ok := seen[filename]; !ok {
+						seen[filename] = true
+						mu.Unlock()
+						cmd := exec.Command(
+							"wget",
+							filename,
+							"-P",
+							downloadDirectory,
+						)
+						log.Println(cmd)
+						err := cmd.Run()
+						if err != nil {
+							log.Print(err)
+						}
+					} else {
+						mu.Unlock()
 					}
 					freeResources <- struct{}{}
 				}
