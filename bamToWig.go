@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"log"
 	"os"
@@ -12,27 +13,9 @@ import (
 
 var (
 	signalDirectory = "/mnt/scratch/shared/SG_KIRILL/control"
-	taskCapacity    = 5
+	taskCapacity    = 3
+	listFile        = "/home/akado2009/controls.tab"
 )
-
-//OSReadDir ...
-func OSReadDir(root string) ([]string, error) {
-	var files []string
-	f, err := os.Open(root)
-	if err != nil {
-		return files, err
-	}
-
-	fileInfo, err := f.Readdir(-1)
-	f.Close()
-	if err != nil {
-		return files, err
-	}
-	for _, file := range fileInfo {
-		files = append(files, file.Name())
-	}
-	return files, nil
-}
 
 var wg sync.WaitGroup
 
@@ -43,7 +26,6 @@ func main() {
 	filenamesChannel := make(chan string, taskCapacity)
 	freeResources := make(chan struct{}, taskCapacity)
 
-	files, _ := OSReadDir(signalDirectory)
 	for i := 0; i < taskCapacity; i++ {
 		freeResources <- struct{}{} // fill it initially
 	}
@@ -56,7 +38,6 @@ func main() {
 					basename := <-filenamesChannel
 					basename = filepath.Base(basename)
 					basename = strings.TrimSuffix(basename, filepath.Ext(basename))
-					fmt.Println(basename)
 					mu.Lock()
 					if _, ok := seen[basename]; !ok {
 						seen[basename] = true
@@ -80,9 +61,9 @@ func main() {
 							cmd := exec.Command(
 								"rm",
 								input,
-								fmt.Sprintf("%s.bam.bai", basename),
-								fmt.Sprintf("%s_depth.txt", basename),
-								fmt.Sprintf("%s.bigwig", basename),
+								fmt.Sprintf(filepath.Join(signalDirectory, "%s.bam.bai", basename)),
+								fmt.Sprintf(filepath.Join(signalDirectory, "%s_depth.txt", basename)),
+								fmt.Sprintf(filepath.Join(signalDirectory, "%s.bigwig", basename)),
 							)
 							err := cmd.Run()
 							if err != nil {
@@ -99,8 +80,19 @@ func main() {
 		}()
 	}
 
-	for _, file := range files {
-		filenamesChannel <- file
+	file, err := os.Open(listFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		filenamesChannel <- strings.TrimSpace(scanner.Text())
+	}
+
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
 	}
 	wg.Wait()
 }
