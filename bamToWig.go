@@ -12,7 +12,7 @@ import (
 
 var (
 	signalDirectory = "/mnt/scratch/shared/SG_KIRILL/control"
-	taskCapacity    = 10
+	taskCapacity    = 5
 )
 
 //OSReadDir ...
@@ -65,32 +65,30 @@ func main() {
 							signalDirectory,
 							fmt.Sprintf("%s.bam", basename),
 						)
-						output := filepath.Join(
-							signalDirectory,
-							fmt.Sprintf("%s.wig", basename),
-						)
 						cmd := exec.Command(
 							"bamToWig",
+							"-D",
+							signalDirectory,
 							input,
-							output,
 						)
 						log.Println(cmd)
 						err := cmd.Run()
 						if err != nil {
 							log.Print(err)
 						}
-						// if err == nil {
-						// 	cmd := exec.Command(
-						// 		"rm",
-						// 		input,
-						// fmt.Sprintf("%.bam.bai", basename),
-						// fmt.Sprintf("%_depth.txt", basename),
-						// 	)
-						// 	err := cmd.Run()
-						// 	if err != nil {
-						// 		log.Print(err)
-						// 	}
-						// }
+						if err == nil {
+							cmd := exec.Command(
+								"rm",
+								input,
+								fmt.Sprintf("%s.bam.bai", basename),
+								fmt.Sprintf("%s_depth.txt", basename),
+								fmt.Sprintf("%s.bigwig", basename),
+							)
+							err := cmd.Run()
+							if err != nil {
+								log.Print(err)
+							}
+						}
 					} else {
 						mu.Unlock()
 					}
