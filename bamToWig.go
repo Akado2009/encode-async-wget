@@ -13,7 +13,7 @@ import (
 
 var (
 	signalDirectory = "/mnt/scratch/shared/SG_KIRILL/control"
-	taskCapacity    = 3
+	taskCapacity    = 2
 	listFile        = "/home/akado2009/controls.tab"
 )
 
