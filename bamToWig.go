@@ -13,11 +13,25 @@ import (
 
 var (
 	signalDirectory = "/mnt/scratch/shared/SG_KIRILL/control"
-	taskCapacity    = 2
+	taskCapacity    = 10
 	listFile        = "/home/akado2009/controls.tab"
 )
 
 var wg sync.WaitGroup
+
+func RunAndWaitForCommand(cmd *exec.Cmd) error {
+	var err error
+	err = cmd.Start()
+	if err != nil {
+		return err
+	}
+
+	err = cmd.Wait()
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
 func main() {
 	mu := &sync.Mutex{}
@@ -46,34 +60,52 @@ func main() {
 							signalDirectory,
 							fmt.Sprintf("%s.bam", basename),
 						)
-						cmd := exec.Command(
-							"bamToWig",
-							"-D",
+						tmpWig := filepath.Join(
 							signalDirectory,
-							input,
+							fmt.Sprintf("%s.wig", basename),
 						)
-						log.Println(cmd)
-						err := cmd.Run()
-						if err != nil {
-							log.Print(err)
+						bedOutput := filepath.Join(
+							signalDirectory,
+							fmt.Sprintf("%s.bed", basename),
+						)
+						// bedtools bamtobed -i  /mnt/scratch/shared/SG_KIRILL/control/ENCFF255TUT.bam > check.wig
+						bedtoolsCMD := exec.Command(
+							"bedtools",
+							"bamtobed",
+							"-i",
+							input,
+							">",
+							tmpWig,
+						)
+						log.Println(bedtoolsCMD)
+						if err := RunAndWaitForCommand(bedtoolsCMD); err != nil {
+							log.Printf("Error is: %v\n", err)
 						}
-						if err == nil {
-							cmd := exec.Command(
+						// awk -F'\t' '{print $1,$2,$3,$5}' check.wig > new.bed
+						awkCMD := exec.Command(
+							"awk",
+							"'{print $1,$2,$3,$5}'",
+							tmpWig,
+							">",
+							bedOutput,
+						)
+						log.Println(awkCMD)
+						if err := RunAndWaitForCommand(bedtoolsCMD); err != nil {
+							log.Printf("Error is: %v\n", err)
+						} else {
+							// rm -rf check.wig
+							rmCMD := exec.Command(
 								"rm",
-								input,
-								fmt.Sprintf(filepath.Join(signalDirectory, "%s.bam.bai", basename)),
-								fmt.Sprintf(filepath.Join(signalDirectory, "%s_depth.txt", basename)),
-								fmt.Sprintf(filepath.Join(signalDirectory, "%s.bigwig", basename)),
+								"-rf",
+								tmpWig,
 							)
-							err := cmd.Run()
-							if err != nil {
-								log.Print(err)
+							if err := RunAndWaitForCommand(rmCMD); err != nil {
+								log.Printf("Error is: %v\n", err)
 							}
 						}
 					} else {
 						mu.Unlock()
 					}
-
 					freeResources <- struct{}{}
 				}
 			}
