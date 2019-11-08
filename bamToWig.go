@@ -77,6 +77,7 @@ func main() {
 							">",
 							tmpWig,
 						)
+						log.Println("Shit")
 						log.Println(bedtoolsCMD)
 						if err := RunAndWaitForCommand(bedtoolsCMD); err != nil {
 							log.Printf("Error is: %v\n", err)
@@ -102,11 +103,13 @@ func main() {
 							if err := RunAndWaitForCommand(rmCMD); err != nil {
 								log.Printf("Error is: %v\n", err)
 							}
+
+							freeResources <- struct{}{}
 						}
 					} else {
 						mu.Unlock()
+						freeResources <- struct{}{}
 					}
-					freeResources <- struct{}{}
 				}
 			}
 		}()
