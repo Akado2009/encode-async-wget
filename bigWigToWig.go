@@ -44,7 +44,9 @@ func OSReadDir(root string) ([]string, error) {
 		return files, err
 	}
 	for _, file := range fileInfo {
-		files = append(files, file.Name())
+		if strings.Contains(file.Name(), "bigWig") {
+			files = append(files, file.Name())
+		}
 	}
 	return files, nil
 }
@@ -90,23 +92,10 @@ func main() {
 							output,
 						)
 						log.Println(cmd)
-						err := RunAndWaitForCommand(cmd)
-						if err != nil {
-							log.Print(err)
-						}
-						if err == nil {
-							cmd := exec.Command(
-								"rm",
-								input,
-							)
-							err := RunAndWaitForCommand(cmd)
-							if err != nil {
-								log.Print(err)
-							}
-						}
 					} else {
 						mu.Unlock()
 					}
+					freeResources <- struct{}{}
 				}
 			}
 		}()
