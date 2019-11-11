@@ -15,6 +15,21 @@ var (
 	taskCapacity    = 10
 )
 
+//RunAndWaitForCommand ...
+func RunAndWaitForCommand(cmd *exec.Cmd) error {
+	var err error
+	err = cmd.Start()
+	if err != nil {
+		return err
+	}
+
+	err = cmd.Wait()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 //OSReadDir ...
 func OSReadDir(root string) ([]string, error) {
 	var files []string
@@ -75,7 +90,7 @@ func main() {
 							output,
 						)
 						log.Println(cmd)
-						err := cmd.Run()
+						err := RunAndWaitForCommand(cmd)
 						if err != nil {
 							log.Print(err)
 						}
@@ -84,7 +99,7 @@ func main() {
 								"rm",
 								input,
 							)
-							err := cmd.Run()
+							err := RunAndWaitForCommand(cmd)
 							if err != nil {
 								log.Print(err)
 							}
