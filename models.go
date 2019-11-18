@@ -10,6 +10,15 @@ var (
 	AppConfig Config
 )
 
+//Sample
+type Sample struct {
+	Accession string
+	Dataset   string
+	Tissue    string
+	CellLine  string
+	Link      string
+}
+
 //Config ...
 type Config struct {
 	File                 string `toml:"File"`

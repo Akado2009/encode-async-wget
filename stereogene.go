@@ -1,0 +1,185 @@
+package main
+
+import (
+	"bufio"
+	"fmt"
+	"log"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"sync"
+)
+
+const (
+	simultaniousPrograms = 50
+	signalDirectory      = "/mnt/scratch/shared/SG_KIRILL/samples"
+	samplesTable         = ".."
+	resultDir            = "/mnt/scratch/shared/SG_KIRILL/results"
+	separator            = "\t"
+)
+
+var wg sync.WaitGroup
+
+func OSReadDir(root string) ([]string, error) {
+	var files []string
+	f, err := os.Open(root)
+	if err != nil {
+		return files, err
+	}
+
+	fileInfo, err := f.Readdir(-1)
+	f.Close()
+	if err != nil {
+		return files, err
+	}
+	for _, file := range fileInfo {
+		if strings.Contains(file.Name(), "bgraph") {
+			files = append(files, file.Name())
+		}
+	}
+	return files, nil
+}
+
+func stringInSlice(a string, list []string) bool {
+	for _, b := range list {
+		if b == a {
+			return true
+		}
+	}
+	return false
+}
+
+func main() {
+	mu := &sync.Mutex{}
+	seen := make(map[string]bool, 0)
+
+	runsChannel := make(chan []Sample, simultaniousPrograms)
+	runsResources := make(chan struct{}, simultaniousPrograms)
+
+	runsErrors := make(chan error, simultaniousPrograms)
+	// runsExchange := make(chan []Sample, simultaniousPrograms)
+
+	// runsPythonErrors := make(chan error, simultaniousPrograms)
+
+	preprocessedFiles, err := OSReadDir(signalDirectory)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Runs Stereogene
+	for i := 0; i < simultaniousPrograms; i++ {
+		wg.Add(1)
+		go func() {
+			for {
+				select {
+				case <-runsResources:
+					pair := <-runsChannel
+					fId := pair[0]
+					sId := pair[1]
+					key := fmt.Sprintf("%s_%s", fId.Accession, sId.Accession)
+					// Generate & run
+					mu.Lock()
+					if _, ok := seen[key]; !ok {
+						seen[key] = true
+						mu.Unlock()
+
+						// Create dir
+						dir := filepath.Join(
+							resultDir,
+							fmt.Sprintf(
+								"%s_%s", fId.Accession, sId.Accession,
+							),
+						)
+						_ = os.MkdirAll(dir, os.ModePerm)
+						cmd := exec.Command(
+							"StereoGene",
+							// window
+							fmt.Sprintf("resPath=%s", dir),
+							"wSIze=300000",
+							// kernel
+							"kernelSigma=1000",
+							// statistics
+							// parameters
+							fmt.Sprintf(
+								"statistics=%s_%s_statistics",
+								fId.Accession,
+								sId.Accession,
+							),
+							fmt.Sprintf(
+								"statistics=%s_%s_parameters",
+								fId.Accession,
+								sId.Accession,
+							),
+							fId.Link,
+							sId.Link,
+						)
+
+						runsErrors <- cmd.Run()
+						// runsExchange <- pair
+					}
+					mu.Unlock()
+					runsResources <- struct{}{}
+				}
+			}
+		}()
+	}
+
+	// Processes output & run python
+	for i := 0; i < simultaniousPrograms; i++ {
+		wg.Add(1)
+		go func() {
+			for {
+				select {
+				case err := <-runsErrors:
+					// task := <-runsExchange
+					if err != nil {
+						log.Fatalf("%+v\n", err)
+					}
+				}
+
+			}
+		}()
+	}
+
+	// ParsesTable
+	sampleSlice := make([]Sameple, 0)
+	file, err := os.Open(samplesTable)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer file.Close()
+
+	for i := 0; i < simultaniousPrograms; i++ {
+		runsResources <- struct{}{}
+	}
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := strings.Split(scanner.Text(), separator)
+		if line[0] != "Accession" && stringInSlice(fmt.Sprintf("%s.bgraph", line[0]), preprocessedFiles) {
+			sampleSlice = append(sampleSlice, Sample{
+				Accession: line[0],
+				Dataset:   line[1],
+				Tissue:    line[2],
+				CellLine:  line[3],
+				Link:      filepath.Join(signalDirectory, fmt.Sprintf("%s.bgraph", line[0])),
+			})
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
+	}
+	for i := 0; i < len(sampleSlice)-1; i++ {
+		for j := i + 1; j < len(sampleSlice); j++ {
+			s := make([]Sample, 2, 2)
+			s[0] = sampleSlice[i]
+			s[1] = sampleSlice[j]
+			runsChannel <- s
+		}
+	}
+	wg.Wait()
+}
+
+// Pass pairs ID1_ID2

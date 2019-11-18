@@ -5,6 +5,7 @@ C_FILES=control.go models.go
 BW_FILES=bigWigToWig.go
 BAM_FILES=bamToWig.go
 FILES_ONE=one.go models.go
+STEREO_FILES=stereogene.go models.go
 RUN=run
 EXPORTS=GOARCH=amd64 GOOS=linux
 BUILD=build
@@ -13,6 +14,7 @@ D_OUT=downloader
 C_OUT=control
 BW_OUT=bigWigToWigGo
 BAM_OUT=bamToWigGo
+STEREO_OUT=stereogeneGo
 PRE_CMD=rm -rf encode.files.txt
 
 downloader:
@@ -37,3 +39,5 @@ one:
 	$(PRE_CMD) | $(GO) $(RUN) $(FILES_ONE)
 release:
 	$(PRE_CMD) | $(EXPORTS) $(GO) $(BUILD) -o $(OUT) $(FILES)
+stereogene_release:
+	$(PRE_CMD) | $(EXPORTS) $(GO) $(BUILD) -o $(STEREO_OUT) $(STEREO_FILES)
