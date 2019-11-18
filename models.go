@@ -10,6 +10,12 @@ var (
 	AppConfig Config
 )
 
+//ErrorReport
+type ErrorReport struct {
+	Err  error
+	Data string
+}
+
 //Sample
 type Sample struct {
 	Accession string

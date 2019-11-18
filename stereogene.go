@@ -14,7 +14,7 @@ import (
 const (
 	simultaniousPrograms = 50
 	signalDirectory      = "/mnt/scratch/shared/SG_KIRILL/samples"
-	samplesTable         = ".."
+	samplesTable         = "encode.files.txt"
 	resultDir            = "/mnt/scratch/shared/SG_KIRILL/results"
 	separator            = "\t"
 )
@@ -57,7 +57,7 @@ func main() {
 	runsChannel := make(chan []Sample, simultaniousPrograms)
 	runsResources := make(chan struct{}, simultaniousPrograms)
 
-	runsErrors := make(chan error, simultaniousPrograms)
+	runsErrors := make(chan ErrorReport, simultaniousPrograms)
 	// runsExchange := make(chan []Sample, simultaniousPrograms)
 
 	// runsPythonErrors := make(chan error, simultaniousPrograms)
@@ -91,34 +91,62 @@ func main() {
 								"%s_%s", fId.Accession, sId.Accession,
 							),
 						)
+						// statFile := fmt.Sprintf(
+						// 	"%s_%s_statistics",
+						// 	fId.Accession,
+						// 	sId.Accession,
+						// )
+						statFile := filepath.Join(
+							dir,
+							fmt.Sprintf(
+								"%s_%s_statistics",
+								fId.Accession,
+								sId.Accession,
+							),
+						)
+						// paramFile := fmt.Sprintf(
+						// 	"%s_%s_parameters",
+						// 	fId.Accession,
+						// 	sId.Accession,
+						// )
+						paramFile := filepath.Join(
+							dir,
+							fmt.Sprintf(
+								"%s_%s_parameters",
+								fId.Accession,
+								sId.Accession,
+							),
+						)
 						_ = os.MkdirAll(dir, os.ModePerm)
 						cmd := exec.Command(
 							"StereoGene",
+							"chrom=/home/akado2009/human_chrom",
 							// window
 							fmt.Sprintf("resPath=%s", dir),
-							"wSIze=300000",
+							"wSize=300000",
 							// kernel
 							"kernelSigma=1000",
 							// statistics
 							// parameters
 							fmt.Sprintf(
-								"statistics=%s_%s_statistics",
-								fId.Accession,
-								sId.Accession,
+								"params=%s", paramFile,
 							),
 							fmt.Sprintf(
-								"statistics=%s_%s_parameters",
-								fId.Accession,
-								sId.Accession,
+								"statistics=%s", statFile,
 							),
 							fId.Link,
 							sId.Link,
 						)
 
-						runsErrors <- cmd.Run()
+						out, err := cmd.CombinedOutput()
+						runsErrors <- ErrorReport{
+							Err:  err,
+							Data: string(out),
+						}
 						// runsExchange <- pair
+					} else {
+						mu.Unlock()
 					}
-					mu.Unlock()
 					runsResources <- struct{}{}
 				}
 			}
@@ -133,8 +161,8 @@ func main() {
 				select {
 				case err := <-runsErrors:
 					// task := <-runsExchange
-					if err != nil {
-						log.Fatalf("%+v\n", err)
+					if err.Err != nil {
+						log.Fatalf("err in %+v\n", err.Data)
 					}
 				}
 
