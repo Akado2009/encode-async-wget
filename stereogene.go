@@ -143,7 +143,7 @@ func main() {
 	}
 
 	// ParsesTable
-	sampleSlice := make([]Sameple, 0)
+	sampleSlice := make([]Sample, 0)
 	file, err := os.Open(samplesTable)
 	if err != nil {
 		log.Fatal(err)
