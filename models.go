@@ -23,6 +23,7 @@ type Sample struct {
 	Tissue    string
 	CellLine  string
 	Link      string
+	Feature   string
 }
 
 //Config ...
@@ -48,7 +49,8 @@ type Experiments struct {
 
 //Experiment ...
 type Experiment struct {
-	Accession string `json:"accession"`
+	Accession   string `json:"accession"`
+	Description string `json:"description"`
 }
 
 //Files ...
@@ -60,11 +62,17 @@ type Files struct {
 type SubGraph struct {
 	Ontology OntologyStruct `json:"biosample_ontology"`
 	Data     []File         `json:"files"`
+	Target   TargetStruct   `json:"target"`
 }
 
 //File ...
 type File struct {
 	ID string `json:"@id"`
+}
+
+//TargetStruct ...
+type TargetStruct struct {
+	Label string `json:"label"`
 }
 
 // ("Accession\tDataset\tTissue\tLab\tLink\tDataType\n")

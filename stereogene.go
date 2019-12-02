@@ -182,29 +182,60 @@ func main() {
 	for i := 0; i < simultaniousPrograms; i++ {
 		runsResources <- struct{}{}
 	}
+	cointCount := 0
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := strings.Split(scanner.Text(), separator)
 		if line[0] != "Accession" && stringInSlice(fmt.Sprintf("%s.bgraph", line[0]), preprocessedFiles) {
-			sampleSlice = append(sampleSlice, Sample{
-				Accession: line[0],
-				Dataset:   line[1],
-				Tissue:    line[2],
-				CellLine:  line[3],
-				Link:      filepath.Join(signalDirectory, fmt.Sprintf("%s.bgraph", line[0])),
-			})
+			cl := line[3]
+			cointCount++
+			if cl == "." {
+				if line[4] != "." {
+					sampleSlice = append(sampleSlice, Sample{
+						Accession: line[0],
+						Dataset:   line[1],
+						Tissue:    line[2],
+						CellLine:  line[4],
+						Link:      filepath.Join(signalDirectory, fmt.Sprintf("%s.bgraph", line[0])),
+						Feature:   line[5],
+					})
+				}
+			} else {
+				sampleSlice = append(sampleSlice, Sample{
+					Accession: line[0],
+					Dataset:   line[1],
+					Tissue:    line[2],
+					CellLine:  cl,
+					Link:      filepath.Join(signalDirectory, fmt.Sprintf("%s.bgraph", line[0])),
+					Feature:   line[5],
+				})
+			}
 		}
 	}
-
+	log.Println("cointCount", cointCount)
+	log.Println("len", len(sampleSlice))
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
 	}
 	for i := 0; i < len(sampleSlice)-1; i++ {
 		for j := i + 1; j < len(sampleSlice); j++ {
-			s := make([]Sample, 2, 2)
-			s[0] = sampleSlice[i]
-			s[1] = sampleSlice[j]
-			runsChannel <- s
+			// s := make([]Sample, 2, 2)
+			// s[0] = sampleSlice[i]
+			// s[1] = sampleSlice[j]
+			// runsChannel <- s
+			if sampleSlice[i].CellLine == sampleSlice[j].CellLine {
+				s := make([]Sample, 2, 2)
+				s[0] = sampleSlice[i]
+				s[1] = sampleSlice[j]
+				runsChannel <- s
+				// pairsCount++
+			}
+			if sampleSlice[i].Feature == sampleSlice[j].Feature {
+				s := make([]Sample, 2, 2)
+				s[0] = sampleSlice[i]
+				s[1] = sampleSlice[j]
+				// pairsCount++
+			}
 		}
 	}
 	wg.Wait()

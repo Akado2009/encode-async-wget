@@ -87,13 +87,15 @@ func main() {
 			log.Fatalf("failed creating file: %s", err)
 		}
 		datawriter := bufio.NewWriter(file)
-		_, _ = datawriter.WriteString("Accession\tDataset\tTissue\tCellLine\tPrimaryCell\tLab\tLink\tDataType\tControls\n")
+		_, _ = datawriter.WriteString("Accession\tDataset\tTissue\tCellLine\tPrimaryCell\tFeature\tLab\tLink\tDataType\tControls\n")
 
 		result := getExperiments(AppConfig.MainURL)
 
 		for _, experiment := range result.Graph {
 			files := getFiles(fmt.Sprintf(AppConfig.ExperimentURL, experiment.Accession))
 			for _, file := range files.Graph {
+				feature := file.Target.Label
+				log.Println(feature)
 				tissue := "."
 				cellLine := "."
 				primaryCell := "."
@@ -108,24 +110,28 @@ func main() {
 				for _, subFile := range file.Data {
 					fResp := getFileResponse(fmt.Sprintf(AppConfig.FileURL, subFile.ID))
 					if fResp.OutputType == "signal" || fResp.OutputType == "raw signal" {
-
+						log.Println(feature)
 						// check for controls
 						// create a better table with controls [control1, control2] to just sum them?
 
 						controls := checkForControl(fmt.Sprintf(AppConfig.ExperimentControlURL, fResp.Dataset))
 						//AddControls! (can add bam, since we have bam2wig)
-						output := fmt.Sprintf(
-							"%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-							fResp.Accession,
-							fResp.Dataset,
-							tissue,
-							cellLine,
-							primaryCell,
-							fResp.Lab.Title,
-							fmt.Sprintf(AppConfig.EncodeRoot, fResp.Href),
-							fResp.OutputType,
-							strings.Join(controls, ", "))
-						_, _ = datawriter.WriteString(output)
+						if cellLine != "." || primaryCell != "." || tissue != "." {
+							output := fmt.Sprintf(
+								"%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+								fResp.Accession,
+								fResp.Dataset,
+								tissue,
+								cellLine,
+								primaryCell,
+								feature,
+								fResp.Lab.Title,
+								fmt.Sprintf(AppConfig.EncodeRoot, fResp.Href),
+								fResp.OutputType,
+								strings.Join(controls, ", "))
+							_, _ = datawriter.WriteString(output)
+						}
+
 					}
 				}
 			}
