@@ -1,0 +1,6 @@
+File = "tf.chip.seq.txt"
+EncodeRoot = "https://www.encodeproject.org%s"
+FileURL = "https://www.encodeproject.org%s?format=json"
+ExperimentURL = "https://www.encodeproject.org/search/?searchTerm=%s&format=json"
+ExperimentControlURL = "https://www.encodeproject.org%s?format=json"
+MainURL = "https://www.encodeproject.org/search/?type=Experiment&status=released&assay_title=TF+ChIP-seq&replicates.library.biosample.donor.organism.scientific_name=Homo+sapiens&award.project=ENCODE&format=json"

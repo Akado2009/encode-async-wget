@@ -1,11 +1,13 @@
 package main
 
 import (
+	"os"
+
 	"github.com/BurntSushi/toml"
 )
 
 var (
-	configPath = "config.toml"
+	configPath = os.Getenv("TOML_CONFIG")
 	//AppConfig ...
 	AppConfig Config
 )

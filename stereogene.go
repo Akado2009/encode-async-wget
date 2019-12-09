@@ -217,6 +217,7 @@ func main() {
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
 	}
+	pairsCount := 0
 	for i := 0; i < len(sampleSlice)-1; i++ {
 		for j := i + 1; j < len(sampleSlice); j++ {
 			// s := make([]Sample, 2, 2)
@@ -228,16 +229,18 @@ func main() {
 				s[0] = sampleSlice[i]
 				s[1] = sampleSlice[j]
 				runsChannel <- s
-				// pairsCount++
+				pairsCount++
 			}
 			if sampleSlice[i].Feature == sampleSlice[j].Feature {
 				s := make([]Sample, 2, 2)
 				s[0] = sampleSlice[i]
 				s[1] = sampleSlice[j]
-				// pairsCount++
+				runsChannel <- s
+				pairsCount++
 			}
 		}
 	}
+	log.Println("pairsCount", pairsCount)
 	wg.Wait()
 }
 

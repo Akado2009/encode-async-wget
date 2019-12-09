@@ -109,7 +109,7 @@ func main() {
 				}
 				for _, subFile := range file.Data {
 					fResp := getFileResponse(fmt.Sprintf(AppConfig.FileURL, subFile.ID))
-					if fResp.OutputType == "signal" || fResp.OutputType == "raw signal" {
+					if fResp.OutputType == "signal" || fResp.OutputType == "raw signal" || fResp.OutputType == "alignments" {
 						log.Println(feature)
 						// check for controls
 						// create a better table with controls [control1, control2] to just sum them?
